@@ -1,29 +1,43 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function Modal({ isOpen, onClose, defaultTab = "login" }) {
   const [tab, setTab] = useState(defaultTab);
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Sync tab when modal opens with a specific defaultTab
   useEffect(() => {
-    if (isOpen) setTab(defaultTab);
+    if (isOpen) { setTab(defaultTab); setError(""); }
   }, [isOpen, defaultTab]);
 
-  // Lock body scroll
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = isOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
-  // Close on Escape
   useEffect(() => {
     const handler = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
+
+  const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError(""); };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true); setError("");
+    try {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, form);
+      localStorage.setItem("token", res.data.access_token);
+      onClose();
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Invalid email or password.");
+    } finally { setLoading(false); }
+  };
 
   return (
     <div
@@ -32,8 +46,6 @@ export default function Modal({ isOpen, onClose, defaultTab = "login" }) {
     >
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
-
-        {/* Top accent line */}
         <div className="modal-accent-line" />
 
         {tab === "login" ? (
@@ -48,60 +60,52 @@ export default function Modal({ isOpen, onClose, defaultTab = "login" }) {
           </>
         )}
 
-        {/* Tab bar */}
         <div className="tab-bar">
-          <button className={`tab ${tab === "login" ? "active" : ""}`} onClick={() => setTab("login")}>
-            Log in
-          </button>
-          <button className={`tab ${tab === "register" ? "active" : ""}`} onClick={() => setTab("register")}>
-            Register
-          </button>
+          <button className={`tab ${tab === "login" ? "active" : ""}`} onClick={() => { setTab("login"); setError(""); }}>Log in</button>
+          <button className={`tab ${tab === "register" ? "active" : ""}`} onClick={() => { onClose(); navigate("/register"); }}>Register</button>
         </div>
 
-        {/* Login Form */}
+        {/* LOGIN */}
         {tab === "login" && (
-          <form onSubmit={(e) => e.preventDefault()}>
+          <form onSubmit={handleLogin}>
+            {error && <div className="modal-error">{error}</div>}
             <div className="form-group">
               <label className="form-label">Email</label>
-              <input type="email" className="form-input" placeholder="you@company.com" />
+              <input type="email" name="email" className="form-input" placeholder="you@company.com" value={form.email} onChange={handleChange} required />
             </div>
             <div className="form-group">
               <label className="form-label">Password</label>
-              <input type="password" className="form-input" placeholder="••••••••" />
+              <input type="password" name="password" className="form-input" placeholder="••••••••" value={form.password} onChange={handleChange} required />
             </div>
-            <button type="submit" className="form-submit">Sign in</button>
+            <button type="submit" className="form-submit" disabled={loading}>
+              {loading ? <span className="btn-spinner" /> : "Sign in"}
+            </button>
             <div className="switch-text">
               No account yet?{" "}
-              <button type="button" className="switch-link" onClick={() => setTab("register")}>
+              <button type="button" className="switch-link" onClick={() => { onClose(); navigate("/register"); }}>
                 Create one
               </button>
             </div>
           </form>
         )}
 
-        {/* Register Form */}
+        {/* REGISTER — redirect to full page */}
         {tab === "register" && (
-          <form onSubmit={(e) => e.preventDefault()}>
-            <div className="form-group">
-              <label className="form-label">Full name</label>
-              <input type="text" className="form-input" placeholder="Jane Smith" />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Email</label>
-              <input type="email" className="form-input" placeholder="you@company.com" />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <input type="password" className="form-input" placeholder="Create a strong password" />
-            </div>
-            <button type="submit" className="form-submit">Create account</button>
-            <div className="switch-text">
+          <div style={{ textAlign: "center", padding: "16px 0 8px" }}>
+            <p style={{ color: "var(--muted)", fontSize: "0.875rem", fontWeight: 300, marginBottom: "20px", lineHeight: 1.6 }}>
+              Registration takes just a few steps — we'll set up your account and business profile together.
+            </p>
+            <button
+              className="form-submit"
+              onClick={() => { onClose(); navigate("/register"); }}
+            >
+              Begin registration →
+            </button>
+            <div className="switch-text" style={{ marginTop: "16px" }}>
               Already have an account?{" "}
-              <button type="button" className="switch-link" onClick={() => setTab("login")}>
-                Log in
-              </button>
+              <button type="button" className="switch-link" onClick={() => setTab("login")}>Sign in</button>
             </div>
-          </form>
+          </div>
         )}
       </div>
     </div>

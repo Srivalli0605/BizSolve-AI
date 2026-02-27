@@ -1,16 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
 /* ─── TOKENS ─────────────────────────────────────────── */
-:root {
-  --bg: #0a0a0b;
-  --surface: #111113;
-  --border: rgba(255, 255, 255, 0.07);
-  --text: #f0ede8;
-  --muted: #6b6b72;
-  --accent: #e8d5a3;
-  --accent2: #c9a96e;
-  --glow: rgba(232, 213, 163, 0.12);
-}
+/* FIX: Removed duplicate :root block — theme tokens are managed
+   exclusively by Dashboard.css via [data-theme] on <html>.
+   Keeping only non-theme globals here. */
 
 /* ─── RESET ──────────────────────────────────────────── */
 *,
@@ -74,8 +67,12 @@ body::before {
   transition: width 0.2s, height 0.2s;
 }
 
-/* ─── NAV ────────────────────────────────────────────── */
-nav {
+/* ─── NAV (Landing page only) ────────────────────────── */
+/* FIX: was bare `nav` selector — this was bleeding into Dashboard's
+   <nav className="dash-nav"> inside the sidebar, forcing it to
+   position:fixed at top:0 and causing the overlap you saw.
+   Now scoped to .landing-nav so Dashboard is unaffected. */
+nav.landing-nav {
   position: fixed;
   top: 0;
   left: 0;
@@ -89,7 +86,7 @@ nav {
   transition: border-color 0.3s, background 0.3s;
 }
 
-nav.scrolled {
+nav.landing-nav.scrolled {
   background: rgba(10, 10, 11, 0.85);
   backdrop-filter: blur(20px);
   border-bottom-color: var(--border);
@@ -126,6 +123,17 @@ nav.scrolled {
   align-items: center;
   gap: 12px;
 }
+
+.nav-theme-toggle {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.nav-theme-toggle:hover { color: var(--accent); background: var(--glow); }
 
 .btn-ghost {
   font-family: 'DM Sans', sans-serif;
@@ -220,13 +228,9 @@ nav.scrolled {
   animation: fadeUp 0.9s 0.25s forwards;
 }
 
-.hero-title em {
-  font-style: normal;
-}
+.hero-title em { font-style: normal; }
 
-.accent-word {
-  color: var(--accent);
-}
+.accent-word { color: var(--accent); }
 
 .hero-sub {
   font-size: 1.05rem;
@@ -522,9 +526,7 @@ footer {
   transition: transform 0.25s;
 }
 
-.modal-overlay.open .modal {
-  transform: translateY(0);
-}
+.modal-overlay.open .modal { transform: translateY(0); }
 
 .modal-accent-line {
   position: absolute;
@@ -669,7 +671,7 @@ footer {
 /* ─── ANIMATIONS ─────────────────────────────────────── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .fade-in {
@@ -685,16 +687,17 @@ footer {
 
 /* ─── RESPONSIVE ─────────────────────────────────────── */
 @media (max-width: 768px) {
-  nav { padding: 18px 24px; }
-  .hero { padding: 100px 24px 60px; }
-  .hero-title { font-size: clamp(1.8rem, 6vw, 2.8rem); }
-  .features { padding: 80px 24px; }
-  .features-grid { grid-template-columns: 1fr; }
-  .cta-section { padding: 40px 24px 80px; }
-  .cta-box { padding: 40px 28px; }
-  footer { padding: 24px; flex-direction: column; gap: 8px; text-align: center; }
-  .modal { margin: 20px; padding: 36px 28px; }
+  nav.landing-nav { padding: 18px 24px; }
+  .hero           { padding: 100px 24px 60px; }
+  .hero-title     { font-size: clamp(1.8rem, 6vw, 2.8rem); }
+  .features       { padding: 80px 24px; }
+  .features-grid  { grid-template-columns: 1fr; }
+  .cta-section    { padding: 40px 24px 80px; }
+  .cta-box        { padding: 40px 28px; }
+  footer          { padding: 24px; flex-direction: column; gap: 8px; text-align: center; }
+  .modal          { margin: 20px; padding: 36px 28px; }
 }
+
 .modal-error {
   background: rgba(239,68,68,0.08);
   border: 1px solid rgba(239,68,68,0.2);

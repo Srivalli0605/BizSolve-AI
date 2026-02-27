@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import CustomCursor from "../components/CustomCursor";
 import Modal from "../components/Modal";
+import { useTheme } from "../context/ThemeContext";
 
 const features = [
   {
@@ -63,6 +64,7 @@ const features = [
 ];
 
 export default function Landing() {
+  const { isDark, toggle: toggleTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState("login");
@@ -93,13 +95,19 @@ export default function Landing() {
     <>
       <CustomCursor />
 
-      {/* NAV */}
-      <nav className={scrolled ? "scrolled" : ""}>
+      {/* NAV — FIX: always include "landing-nav" so Global.css scoped styles apply correctly */}
+      <nav className={`landing-nav${scrolled ? " scrolled" : ""}`}>
         <a href="/" className="logo">
           <div className="logo-dot" />
           BizSolve
         </a>
         <div className="nav-actions">
+          <button className="nav-theme-toggle" onClick={toggleTheme} title="Toggle theme">
+            {isDark
+              ? <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="10" cy="10" r="4"/><path d="M10 1v2M10 17v2M1 10h2M17 10h2M3.5 3.5l1.4 1.4M15.1 15.1l1.4 1.4M3.5 16.5l1.4-1.4M15.1 4.9l1.4-1.4"/></svg>
+              : <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M17.5 12A7.5 7.5 0 018 2.5a7.5 7.5 0 100 15 7.5 7.5 0 009.5-5.5z"/></svg>
+            }
+          </button>
           <button className="btn-ghost" onClick={() => openModal("login")}>Log in</button>
           <button className="btn-primary" onClick={() => openModal("register")}>Get started</button>
         </div>

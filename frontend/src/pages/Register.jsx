@@ -86,14 +86,23 @@ export default function Register() {
         primary_goal: form.primary_goal,
         brand_tone: form.brand_tone,
         preferred_style: form.preferred_style,
-        brand_colors: form.brand_colors,
+        brand_colors: form.brand_colors 
+  ? form.brand_colors.split(",").map(c => c.trim()).filter(Boolean)
+  : [],
+
       };
 
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, payload);
       localStorage.setItem("token", res.data.access_token);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.detail || "Registration failed. Please try again.");
+      const detail = err.response?.data?.detail;
+  if (Array.isArray(detail)) {
+    setError(detail.map(d => d.msg).join(", "));
+  } else {
+    setError(detail || "Registration failed. Please try again.");
+  }
+
     } finally {
       setLoading(false);
     }

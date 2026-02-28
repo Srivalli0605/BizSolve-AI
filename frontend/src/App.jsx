@@ -4,6 +4,8 @@ import Landing   from "./pages/Landing";
 import Login     from "./pages/Login";
 import Register  from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import ChatPage from "./pages/ChatPage";
+import ChatHistoryPage from "./pages/ChatHistoryPage";
 
 export default function App() {
   return (

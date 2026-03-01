@@ -20,6 +20,7 @@ from routes.customer_routes import router as customer_router
 from routes.chatlog_routes import router as chatlog_router
 from routes.admin_routes import router as admin_router
 
+
 # ---------------------------------------------------------------------------
 # App initialization
 # ---------------------------------------------------------------------------

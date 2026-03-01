@@ -4,7 +4,7 @@ import Landing   from "./pages/Landing";
 import Login     from "./pages/Login";
 import Register  from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-
+import WebsiteTemplate from './pages/WebsiteTemplate'
 export default function App() {
   return (
     <ThemeProvider>
@@ -13,6 +13,7 @@ export default function App() {
         <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
+<Route path="/website/:websiteId" element={<WebsiteTemplate />} />
       </Routes>
     </ThemeProvider>
   );

@@ -1,15 +1,14 @@
 """
 routes/product_routes.py
 ------------------------
-Product management endpoints (scoped to the authenticated user's business):
-  GET    /products/          - List all products
-  GET    /products/{id}      - Get a single product
-  POST   /products/          - Create a product
-  PATCH  /products/{id}      - Update a product
-  DELETE /products/{id}      - Delete a product
+  GET    /products/             - List all products
+  POST   /products/             - Create product
+  POST   /products/upload-image - Upload product image to Cloudinary
+  PATCH  /products/{id}         - Update product
+  DELETE /products/{id}         - Delete product
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, status
 from datetime import datetime
 from bson import ObjectId
 
@@ -20,67 +19,65 @@ from utils.dependencies import get_current_user
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def serialize_product(p: dict) -> dict:
-    """Convert MongoDB product document to JSON-safe dict."""
+def serialize(p: dict) -> dict:
     return {
         "id": str(p["_id"]),
         "business_id": p["business_id"],
         "name": p["name"],
         "description": p.get("description"),
-        "price": p["price"],
         "image_url": p.get("image_url"),
         "created_at": p["created_at"],
     }
 
 
-def get_product_or_404(db, product_id: str, business_id: str) -> dict:
-    """
-    Fetch a product by ID, scoped to the user's business.
-    Raises 404 if not found or doesn't belong to this business.
-    """
+def get_or_404(db, product_id: str, business_id: str) -> dict:
     try:
         oid = ObjectId(product_id)
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid product ID format.")
-
-    product = db["products"].find_one({"_id": oid, "business_id": business_id})
-    if not product:
+        raise HTTPException(status_code=400, detail="Invalid product ID.")
+    p = db["products"].find_one({"_id": oid, "business_id": business_id})
+    if not p:
         raise HTTPException(status_code=404, detail="Product not found.")
-    return product
+    return p
 
 
-# ---------------------------------------------------------------------------
-# Endpoints
-# ---------------------------------------------------------------------------
+# ── Upload image to Cloudinary ────────────────────────────────────────────────
+@router.post("/upload-image")
+async def upload_product_image(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    allowed = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+    if file.content_type not in allowed:
+        raise HTTPException(status_code=400, detail="Only JPG, PNG, WEBP, GIF allowed.")
 
+    try:
+        file_bytes = await file.read()
+        print(f"[Upload] File received: {file.filename}, size: {len(file_bytes)} bytes")  # ← ADD
+        from utils.cloudinary_utils import upload_product_image as cloudinary_upload
+        image_url = cloudinary_upload(file_bytes, file.filename)
+        print(f"[Upload] Cloudinary URL: {image_url}")  # ← ADD
+    except Exception as e:
+        print(f"[Upload] ERROR: {e}")  # ← ADD
+        raise HTTPException(status_code=500, detail=f"Image upload failed: {str(e)}")
+
+    return {"image_url": image_url}
+
+
+# ── CRUD ──────────────────────────────────────────────────────────────────────
 @router.get("/", response_model=list[ProductResponse])
 def list_products(current_user: dict = Depends(get_current_user)):
-    """List all products for the authenticated user's business."""
     db = get_database()
-    products = list(db["products"].find({"business_id": current_user["business_id"]}))
-    return [serialize_product(p) for p in products]
-
-
-@router.get("/{product_id}", response_model=ProductResponse)
-def get_product(product_id: str, current_user: dict = Depends(get_current_user)):
-    """Get a single product by ID."""
-    db = get_database()
-    product = get_product_or_404(db, product_id, current_user["business_id"])
-    return serialize_product(product)
+    products = list(db["products"].find(
+        {"business_id": current_user["business_id"]},
+        sort=[("created_at", -1)]
+    ))
+    return [serialize(p) for p in products]
 
 
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
-def create_product(
-    data: ProductCreateRequest,
-    current_user: dict = Depends(get_current_user),
-):
-    """Create a new product for the authenticated user's business."""
+def create_product(data: ProductCreateRequest, current_user: dict = Depends(get_current_user)):
     db = get_database()
-
     doc = {
         **data.dict(),
         "business_id": current_user["business_id"],
@@ -88,49 +85,26 @@ def create_product(
     }
     result = db["products"].insert_one(doc)
     doc["_id"] = result.inserted_id
-
-    return serialize_product(doc)
+    return serialize(doc)
 
 
 @router.patch("/{product_id}", response_model=ProductResponse)
-def update_product(
-    product_id: str,
-    data: ProductUpdateRequest,
-    current_user: dict = Depends(get_current_user),
-):
-    """Partially update a product. Only provided fields are updated."""
+def update_product(product_id: str, data: ProductUpdateRequest, current_user: dict = Depends(get_current_user)):
     db = get_database()
-
-    # Verify ownership
-    get_product_or_404(db, product_id, current_user["business_id"])
-
-    update_fields = {k: v for k, v in data.dict().items() if v is not None}
-    if not update_fields:
-        raise HTTPException(status_code=400, detail="No fields provided to update.")
-
-    db["products"].update_one(
-        {"_id": ObjectId(product_id)},
-        {"$set": update_fields},
-    )
-
-    updated = get_product_or_404(db, product_id, current_user["business_id"])
-    return serialize_product(updated)
+    get_or_404(db, product_id, current_user["business_id"])
+    fields = {k: v for k, v in data.dict().items() if v is not None}
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update.")
+    db["products"].update_one({"_id": ObjectId(product_id)}, {"$set": fields})
+    return serialize(get_or_404(db, product_id, current_user["business_id"]))
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(product_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a product. Returns 204 on success."""
     db = get_database()
-
-    try:
-        oid = ObjectId(product_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid product ID format.")
-
     result = db["products"].delete_one({
-        "_id": oid,
-        "business_id": current_user["business_id"],  # Scoped to owner only
+        "_id": ObjectId(product_id),
+        "business_id": current_user["business_id"],
     })
-
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Product not found.")

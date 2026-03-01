@@ -4,6 +4,9 @@ import CustomCursor from "../components/CustomCursor";
 import axios from "axios";
 import "../styles/Dashboard.css";
 import { useTheme } from "../context/ThemeContext";
+import WebsiteGenerator from './WebsiteGenerator';
+import Products from './Products';
+
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard",   icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg> },
@@ -391,8 +394,20 @@ export default function Dashboard() {
             </div>
           )}
 
+{activeNav==="website" && (
+            <div className="dash-content">
+              <WebsiteGenerator />
+            </div>
+          )}
+
+{/* ── PRODUCTS ── */}
+          {activeNav==="products" && (
+            <div className="dash-content">
+              <Products />
+            </div>
+          )}
           {/* Placeholder sections */}
-          {activeNav!=="dashboard" && (
+          {activeNav!=="dashboard" && activeNav!=="website" && activeNav!=="products" && (
             <div className="dash-content">
               <div className="dash-coming-soon">
                 <div className="dash-coming-icon">{NAV_ITEMS.find(n=>n.id===activeNav)?.icon}</div>

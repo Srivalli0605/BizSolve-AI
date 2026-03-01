@@ -3,9 +3,11 @@ import { useNavigate, Link } from "react-router-dom";
 import CustomCursor from "../components/CustomCursor";
 import axios from "axios";
 import "../styles/Dashboard.css";
+import "../styles/BrandVault.css";
 import { useTheme } from "../context/ThemeContext";
 import ChatPage from "./ChatPage";
 import ChatHistoryPage from "./ChatHistoryPage";
+import BrandVaultPage from "./BrandVaultPage";
 
 const NAV_ITEMS = [
   { id: "dashboard",    label: "Dashboard",    icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg> },
@@ -55,7 +57,7 @@ const parseSwatch = (c) => {
   return MAP[t.toLowerCase()] || "#e8d5a3";
 };
 
-const IMPLEMENTED_NAV = new Set(["dashboard", "chatbot", "chat-history"]);
+const IMPLEMENTED_NAV = new Set(["dashboard", "chatbot", "chat-history", "vault"]);
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -368,6 +370,7 @@ export default function Dashboard() {
           {/* ─── CHAT PAGES ─── */}
           {activeNav === "chatbot"      && <ChatPage />}
           {activeNav === "chat-history" && <ChatHistoryPage />}
+          {activeNav === "vault"        && <BrandVaultPage />}  {/* ← ADD THIS */}
 
           {/* ─── COMING SOON ─── */}
           {!IMPLEMENTED_NAV.has(activeNav) && (

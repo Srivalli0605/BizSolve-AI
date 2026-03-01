@@ -18,8 +18,11 @@ from routes.asset_routes import router as asset_router
 from routes.poster_routes import router as poster_router
 from routes.customer_routes import router as customer_router
 from routes.chatlog_routes import router as chatlog_router
-from routes.chat_routes import router as chat_router          # ← NEW
+from routes.chat_routes import router as chat_router
 from routes.admin_routes import router as admin_router
+from routes.brandvault_routes import router as brandvault_router  # ← NEW
+
+from database import get_database
 
 
 # ---------------------------------------------------------------------------
@@ -34,22 +37,43 @@ app = FastAPI(
         "campaigns, posters, brand vault, chatbot logs, and admin analytics."
     ),
     version="1.0.0",
-    docs_url="/docs",       # Swagger UI
-    redoc_url="/redoc",     # ReDoc
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 # ---------------------------------------------------------------------------
 # CORS Middleware
-# Update allow_origins in production to only allow your frontend domain(s).
 # ---------------------------------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          # TODO: Lock down in production e.g. ["https://yourdomain.com"]
+    allow_origins=["*"],          # TODO: Lock down in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------------------------------------------------------------------
+# Startup — create indexes
+# ---------------------------------------------------------------------------
+
+@app.on_event("startup")
+def create_indexes():
+    db = get_database()
+
+    # BrandVault — one vault per business
+    db["brandvault"].create_index("business_id", unique=True)
+
+    # Brand Assets — filter by business + category
+    db["brand_assets"].create_index("business_id")
+    db["brand_assets"].create_index([("business_id", 1), ("category", 1)])
+
+    # Brand Content — filter by business
+    db["brand_content"].create_index("business_id")
+
+    # Chatlogs — filter by business, sorted by time
+    db["chatlogs"].create_index([("business_id", 1), ("timestamp", -1)])
+
 
 # ---------------------------------------------------------------------------
 # Register Routers
@@ -64,8 +88,10 @@ app.include_router(asset_router)        # /assets/*
 app.include_router(poster_router)       # /posters/*
 app.include_router(customer_router)     # /customers/*
 app.include_router(chatlog_router)      # /chatlogs/*
-app.include_router(chat_router)         # /chat/*   ← NEW
+app.include_router(chat_router)         # /chat/*
 app.include_router(admin_router)        # /admin/*
+app.include_router(brandvault_router)   # /brandvault/*  ← NEW
+
 
 # ---------------------------------------------------------------------------
 # Health check

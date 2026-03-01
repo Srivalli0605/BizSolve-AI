@@ -15,7 +15,7 @@ from typing import Optional, List
 
 from database import get_database
 from utils.dependencies import get_current_user
-from utils.gemini_utils import generate_website_content
+from utils.gemini_utils_website import generate_website_content
 
 router = APIRouter(tags=["Website"])
 

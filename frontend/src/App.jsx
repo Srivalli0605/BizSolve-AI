@@ -5,6 +5,9 @@ import Login     from "./pages/Login";
 import Register  from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import WebsiteTemplate from './pages/WebsiteTemplate'
+import ChatPage from "./pages/ChatPage";
+import ChatHistoryPage from "./pages/ChatHistoryPage";
+
 export default function App() {
   return (
     <ThemeProvider>

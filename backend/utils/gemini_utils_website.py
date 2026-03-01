@@ -1,6 +1,7 @@
 """
 utils/gemini_utils.py
 Gemini AI + Unsplash for BizSolve.
+This is a MARKETING website generator — no e-commerce, no shop/buy/order CTAs.
 """
 
 import json
@@ -19,7 +20,7 @@ def get_client():
 
 
 def fetch_image(query: str, fallback: str = "business") -> str:
-    """Search Unsplash for an image. Falls back to fallback query if nothing found."""
+    """Search Unsplash for an image."""
     access_key = os.getenv("UNSPLASH_ACCESS_KEY")
     if not access_key:
         print("[Unsplash] No UNSPLASH_ACCESS_KEY set — skipping images")
@@ -39,7 +40,7 @@ def fetch_image(query: str, fallback: str = "business") -> str:
                     pick = random.choice(results[:5])
                     return pick["urls"]["regular"]
             elif res.status_code == 403:
-                print(f"[Unsplash] 403 Forbidden — check your UNSPLASH_ACCESS_KEY")
+                print("[Unsplash] 403 Forbidden — check your UNSPLASH_ACCESS_KEY")
         except Exception as e:
             print(f"[Unsplash] error for '{q}': {e}")
         return ""
@@ -48,6 +49,29 @@ def fetch_image(query: str, fallback: str = "business") -> str:
     if not url and fallback and fallback != query:
         url = search(fallback)
     return url
+
+
+def sanitize_cta(text: str) -> str:
+    """Replace any e-commerce CTAs with marketing equivalents."""
+    if not text:
+        return text
+    replacements = {
+        "shop now":      "View Our Range",
+        "buy now":       "Explore Products",
+        "order now":     "See Our Offerings",
+        "add to cart":   "Learn More",
+        "purchase now":  "Discover More",
+        "shop our":      "Explore Our",
+        "buy our":       "Discover Our",
+        "order online":  "Contact Us",
+        "checkout":      "Get in Touch",
+        "shop":          "Explore",
+    }
+    lower = text.lower().strip()
+    for bad, good in replacements.items():
+        if lower == bad or lower.startswith(bad):
+            return good
+    return text
 
 
 def generate_website_content(
@@ -80,9 +104,9 @@ Location: {business.get("location", "")}
     include_faq    = bool(sections and "FAQ" in sections)
 
     offer_details = ""
-    if current_offers:    offer_details += f"Current offer: {current_offers}. "
+    if current_offers:     offer_details += f"Current offer: {current_offers}. "
     if festival_promotion: offer_details += f"Festival promotion: {festival_promotion}. "
-    if promo_code:        offer_details += f"Promo code: {promo_code}."
+    if promo_code:         offer_details += f"Promo code: {promo_code}."
 
     user_inputs = ""
     if tagline:       user_inputs += f"\nDesired tagline: {tagline}"
@@ -91,14 +115,17 @@ Location: {business.get("location", "")}
     if sections:      user_inputs += f"\nSections to include: {', '.join(sections)}"
     if extra_notes:   user_inputs += f"\nExtra instructions: {extra_notes}"
     if user_products:
-        products_str = "\n".join([f'  - {p.get("name","")}: {p.get("description","") or "no description"}' for p in user_products])
+        products_str = "\n".join([
+            f'  - {p.get("name","")}: {p.get("description","") or "no description"}'
+            for p in user_products
+        ])
         user_inputs += f"\nUser's actual products (use EXACTLY these names as service titles):\n{products_str}"
 
     offers_block = f"""
   "offers": {{
     "title": "Catchy offer title based on: {offer_details}",
     "description": "Offer description",
-    "cta": "Claim button text"
+    "cta": "Enquire Now"
   }},""" if include_offers else ""
 
     faq_block = """
@@ -107,7 +134,10 @@ Location: {business.get("location", "")}
   ],""" if include_faq else ""
 
     prompt = f"""
-You are a professional website copywriter.
+You are a professional marketing website copywriter.
+This is a BROCHURE/MARKETING website — NOT an e-commerce store.
+The business does NOT sell online. Customers contact them to enquire or buy offline.
+
 Generate website content for this business:
 
 {business_context}
@@ -120,9 +150,9 @@ Return ONLY valid JSON. No markdown. No explanation. Start with {{
     "headline": "Attention-grabbing headline (max 8 words)",
     "subheadline": "Supporting value proposition (max 15 words)",
     "tagline": "Memorable tagline (max 6 words)",
-    "cta_primary": "Button text (2-4 words)",
-    "cta_secondary": "Secondary button (2-4 words)",
-    "image_hint": "Unsplash search query — 3-5 specific words describing the hero image"
+    "cta_primary": "MUST be one of: 'View Our Products', 'Explore Our Range', 'See Our Offerings', 'Discover More', 'View Products' — NEVER 'Shop Now', 'Buy Now', 'Order Now', 'Add to Cart'",
+    "cta_secondary": "MUST be one of: 'Contact Us', 'Get in Touch', 'Enquire Now', 'Learn More', 'About Us'",
+    "image_hint": "Unsplash query — 3-5 specific words"
   }},
   "about": {{
     "title": "About section heading",
@@ -130,43 +160,39 @@ Return ONLY valid JSON. No markdown. No explanation. Start with {{
     "highlight_1": "Key strength 1",
     "highlight_2": "Key strength 2",
     "highlight_3": "Key strength 3",
-    "image_hint": "Unsplash search query — 3-5 words for the about section photo"
+    "image_hint": "Unsplash query — 3-5 words"
   }},
   "services": [
     {{
       "title": "Product/service name",
-      "description": "1-2 sentence description",
+      "description": "1-2 sentence description — what it is, its benefits. No pricing, no 'buy' language.",
       "icon": "emoji",
-      "image_hint": "Unsplash search — describe the EXACT product, e.g. 'groundnut oil bottle pour', 'mustard oil seeds yellow', 'rice bran oil tin'"
+      "image_hint": "Unsplash query — describe EXACT product e.g. 'groundnut oil bottle pour', 'mustard seeds yellow', 'rice bran oil tin'"
     }}
   ],
   "testimonials": [
-    {{"name": "Name", "role": "Customer type", "text": "Realistic testimonial."}}
+    {{"name": "Name", "role": "Customer type", "text": "Realistic testimonial about quality/service, not about buying."}}
   ]{offers_block}{faq_block},
   "cta": {{
-    "headline": "CTA headline",
-    "subtext": "Persuasive supporting text",
-    "button_text": "Action text"
+    "headline": "Reach out headline — e.g. 'Interested? Let's Talk.' or 'Get in Touch with Us'",
+    "subtext": "Invite them to contact — e.g. 'Reach out to know more about our products and pricing.'",
+    "button_text": "MUST be: 'Contact Us' or 'Enquire Now' or 'Get in Touch' — NEVER 'Shop Now' or 'Buy Now'"
   }},
   "footer": {{
-    "tagline": "Short tagline",
+    "tagline": "Short brand tagline",
     "email": "contact@{biz_name.lower().replace(' ','').replace("'","")}.com",
     "phone": "+91 00000 00000",
     "address": "{business.get('location', '')}"
   }}
 }}
 
-CRITICAL — image_hint rules:
-- Category is: {category}
-- The hint must describe the ACTUAL PHYSICAL PRODUCT or scene
-- For edible oils: "groundnut oil bottle kitchen pour", "mustard oil yellow seeds bottle", "rice bran oil container golden"
-- For fashion/clothing: "saree silk colorful drape", "cotton kurta ethnic display", "denim jeans folded shelf"
-- For food/restaurant: "biryani bowl steam indian rice", "dal tadka indian cuisine bowl"
-- For grocery/wholesale: "rice grain sack burlap natural", "spices bowls colorful indian market"
-- NEVER write vague hints like "quality product", "professional service", "business growth"
-- Be VERY specific — 3-5 concrete nouns describing the exact item
-
-{"Use EXACTLY the user's product names as service titles." if user_products else "Generate 3-5 services matching their offerings."}
+CRITICAL rules:
+1. This is a MARKETING site — visitors browse and then CONTACT the business. No online selling.
+2. CTA buttons must invite enquiry/exploration, NEVER purchase: use 'View Products', 'Enquire Now', 'Contact Us', 'Get in Touch', 'Explore Range'
+3. BANNED words in CTAs: Shop, Buy, Order, Purchase, Cart, Checkout, Pay
+4. image_hint must describe the ACTUAL PHYSICAL PRODUCT — for oils: 'groundnut oil bottle golden kitchen', for fashion: 'saree silk colorful display', for food: 'biryani bowl steam rice'
+5. NEVER write vague image hints like 'quality product' or 'business growth'
+{"6. Use EXACTLY the user's product names as service titles." if user_products else "6. Generate 3-5 services matching their offerings."}
 Brand tone: {business.get("brand_tone", "Professional")}
 Return ONLY the JSON object.
 """
@@ -183,26 +209,34 @@ Return ONLY the JSON object.
     except json.JSONDecodeError as e:
         raise ValueError(f"Gemini returned invalid JSON: {e}\nRaw: {raw[:500]}")
 
+    # ── Sanitize any accidental shop/buy CTAs ─────────────────────────────
+    hero = content.get("hero", {})
+    hero["cta_primary"]   = sanitize_cta(hero.get("cta_primary", "View Our Products"))
+    hero["cta_secondary"] = sanitize_cta(hero.get("cta_secondary", "Contact Us"))
+
+    cta_section = content.get("cta", {})
+    cta_section["button_text"] = sanitize_cta(cta_section.get("button_text", "Contact Us"))
+
     if include_offers and "offers" not in content:
-        content["offers"] = {"title": "Special Offer", "description": offer_details, "cta": "Claim Now"}
+        content["offers"] = {"title": "Special Offer", "description": offer_details, "cta": "Enquire Now"}
 
     # ── Fetch Unsplash images using Gemini's hints ────────────────────────
 
     # Hero
-    hero_hint = content.get("hero", {}).pop("image_hint", None)
+    hero_hint  = content.get("hero", {}).pop("image_hint", None)
     hero_query = hero_hint or f"{category} product professional"
     content["hero"]["image_url"] = fetch_image(hero_query, category)
     print(f"[Images] Hero: '{hero_query}' → {'✅' if content['hero']['image_url'] else '❌'}")
 
     # About
-    about_hint = content.get("about", {}).pop("image_hint", None)
+    about_hint  = content.get("about", {}).pop("image_hint", None)
     about_query = about_hint or f"{category} business interior"
     content["about"]["image_url"] = fetch_image(about_query, f"{category} professional")
     print(f"[Images] About: '{about_query}' → {'✅' if content['about']['image_url'] else '❌'}")
 
     # Services / Products
     if user_products:
-        print(f"[Images] Using {len(user_products)} user product images (no Unsplash needed)")
+        print(f"[Images] Using {len(user_products)} user product images")
         gemini_services = content.get("services", [])
         content["services"] = [
             {

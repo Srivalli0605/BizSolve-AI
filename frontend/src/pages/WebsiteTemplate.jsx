@@ -8,12 +8,25 @@ const parseSwatch = (c) => {
   if (!c) return "#e8d5a3";
   const t = c.trim();
   if (t.startsWith("#")) return t;
-  const MAP = { gold:"#e8d5a3",amber:"#c9a96e",navy:"#1e3a5f",white:"#f5f5f5",black:"#111",red:"#b22222",blue:"#2255aa",green:"#2a7a4b" };
+  const MAP = {
+    gold:"#e8d5a3", amber:"#c9a96e", navy:"#1e3a5f", white:"#f5f5f5",
+    black:"#111111", red:"#b22222", blue:"#2255aa", green:"#2a7a4b",
+    pink:"#e75480", purple:"#6b3fa0", orange:"#e07b39", teal:"#1a7a7a",
+    yellow:"#e0c040", brown:"#8b5e3c", maroon:"#800000", grey:"#888888",
+    gray:"#888888", silver:"#c0c0c0", indigo:"#4b0082", crimson:"#b22222",
+    emerald:"#2a9a6a", rose:"#c9748a", saffron:"#f59e0b", slate:"#64748b",
+  };
   return MAP[t.toLowerCase()] || "#e8d5a3";
 };
 
-// Strip **bold** markdown from Gemini output
 const stripMd = (text) => text ? text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1") : "";
+
+const luminance = (hex) => {
+  const h = hex.replace("#","");
+  if (h.length !== 6) return 0;
+  const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+  return 0.299*r + 0.587*g + 0.114*b;
+};
 
 export default function WebsiteTemplate() {
   const { websiteId } = useParams();
@@ -32,7 +45,6 @@ export default function WebsiteTemplate() {
       <div style={{ width:10, height:10, borderRadius:"50%", background:"#e8d5a3", animation:"pulse 1.2s ease-in-out infinite" }}/>
     </div>
   );
-
   if (error) return (
     <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#09090b", color:"#555", fontFamily:"sans-serif" }}>
       {error}
@@ -40,8 +52,11 @@ export default function WebsiteTemplate() {
   );
 
   const { content_json: c, branding } = data;
-  const primary  = parseSwatch(branding?.brand_colors?.[0]);
-  const heroImg  = c.hero?.image_url;
+  const colors = branding?.brand_colors || [];
+
+  // FIX: [2] = accent/primary, [0] = bg hint — matching vercel_utils.py logic
+  const primary  = parseSwatch(colors[2] || colors[0] || null) || "#e8d5a3";
+  const ctaText  = luminance(primary) > 140 ? "#09090b" : "#f0ede8";
   const aboutImg = c.about?.image_url;
   const hasOffers = !!(c.offers && (c.offers.title || c.offers.description));
 
@@ -56,36 +71,44 @@ export default function WebsiteTemplate() {
     .d1{animation-delay:0.1s}.d2{animation-delay:0.2s}.d3{animation-delay:0.3s}.d4{animation-delay:0.4s}
     a{color:inherit;text-decoration:none;}
     button{cursor:pointer;font-family:'DM Sans',sans-serif;}
-    nav a:hover{opacity:1 !important;}
+    @media(max-width:768px){
+      nav .nav-links{display:none!important;}
+      .hero-inner{padding:60px 24px!important;}
+      .about-grid{grid-template-columns:1fr!important;padding:60px 24px!important;}
+      .svc-section{padding:0 24px 60px!important;}
+      .svc-grid{grid-template-columns:1fr!important;}
+      .hero-btns{flex-direction:column;align-items:center;}
+      .cta-section{padding:60px 24px!important;}
+      footer{padding:24px!important;flex-direction:column;text-align:center;}
+    }
   `;
 
   return (
     <div style={{ fontFamily:"'DM Sans',sans-serif", background:"#09090b", color:"#f0ede8", minHeight:"100vh" }}>
       <style>{css}</style>
 
-      {/* ── NAV ── */}
-      <nav style={{ position:"sticky", top:0, zIndex:100, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 56px", height:64, background:"rgba(9,9,11,0.88)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
+      {/* NAV */}
+      <nav style={{ position:"sticky", top:0, zIndex:100, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 56px", height:64, background:"rgba(9,9,11,0.9)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
           {branding?.logo_url && <img src={branding.logo_url} alt="logo" style={{ width:28, height:28, borderRadius:6, objectFit:"cover" }}/>}
           <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:"1.1rem" }}>{branding?.business_name}</span>
         </div>
-        <div style={{ display:"flex", gap:28, alignItems:"center" }}>
+        <div className="nav-links" style={{ display:"flex", gap:28, alignItems:"center" }}>
           {["About","Services","Contact"].map(l => (
             <a key={l} href={`#${l.toLowerCase()}`} style={{ color:"rgba(240,237,232,0.45)", fontSize:"0.875rem", transition:"color 0.2s" }}
               onMouseEnter={e=>e.target.style.color="#f0ede8"} onMouseLeave={e=>e.target.style.color="rgba(240,237,232,0.45)"}>{l}</a>
           ))}
-          <a href="#contact" style={{ padding:"9px 22px", background:primary, color:"#09090b", borderRadius:7, fontWeight:600, fontSize:"0.875rem" }}>
+          <a href="#contact" style={{ padding:"9px 22px", background:primary, color:ctaText, borderRadius:7, fontWeight:600, fontSize:"0.875rem" }}>
             {c.hero?.cta_primary || "Get Started"}
           </a>
         </div>
       </nav>
 
-      {/* ── HERO ── */}
+      {/* HERO */}
       <section style={{ position:"relative", minHeight:"92vh", display:"flex", alignItems:"center", justifyContent:"center", textAlign:"center", overflow:"hidden" }}>
-        <div style={{ position:"absolute", top:"30%", left:"50%", transform:"translate(-50%,-50%)", width:700, height:500, background:`radial-gradient(ellipse, ${primary}22 0%, transparent 70%)`, pointerEvents:"none" }}/>
-
-        <div style={{ position:"relative", zIndex:1, padding:"80px 24px", maxWidth:860, margin:"0 auto" }}>
-          <div className="animate d1" style={{ display:"inline-flex", alignItems:"center", gap:8, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.05)", padding:"6px 18px", borderRadius:100, fontSize:"0.72rem", color:primary, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:32 }}>
+        <div style={{ position:"absolute", top:"30%", left:"50%", transform:"translate(-50%,-50%)", width:700, height:500, background:`radial-gradient(ellipse,${primary}22 0%,transparent 70%)`, pointerEvents:"none" }}/>
+        <div className="hero-inner" style={{ position:"relative", zIndex:1, padding:"80px 24px", maxWidth:860, margin:"0 auto" }}>
+          <div className="animate d1" style={{ display:"inline-flex", alignItems:"center", gap:8, border:`1px solid ${primary}50`, background:`${primary}12`, padding:"6px 18px", borderRadius:100, fontSize:"0.72rem", color:primary, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:32 }}>
             {c.hero?.tagline || branding?.business_name}
           </div>
           <h1 className="animate d2" style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(2.6rem,6vw,5.2rem)", fontWeight:800, letterSpacing:"-0.02em", lineHeight:1.08, marginBottom:24 }}>
@@ -94,8 +117,8 @@ export default function WebsiteTemplate() {
           <p className="animate d3" style={{ fontSize:"1.1rem", color:"rgba(240,237,232,0.6)", maxWidth:520, margin:"0 auto 48px", lineHeight:1.75, fontWeight:300 }}>
             {c.hero?.subheadline}
           </p>
-          <div className="animate d4" style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
-            <a href="#contact" style={{ padding:"15px 36px", background:primary, color:"#09090b", borderRadius:9, fontWeight:600, fontSize:"1rem" }}>
+          <div className="animate d4 hero-btns" style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+            <a href="#contact" style={{ padding:"15px 36px", background:primary, color:ctaText, borderRadius:9, fontWeight:600, fontSize:"1rem" }}>
               {c.hero?.cta_primary || "Get Started"}
             </a>
             <a href="#about" style={{ padding:"15px 36px", background:"rgba(255,255,255,0.06)", color:"#f0ede8", border:"1px solid rgba(255,255,255,0.12)", borderRadius:9, fontSize:"1rem" }}>
@@ -105,37 +128,31 @@ export default function WebsiteTemplate() {
         </div>
       </section>
 
-      {/* ── OFFERS BANNER ── */}
+      {/* OFFERS */}
       {hasOffers && (
-        <section style={{ background:`linear-gradient(135deg, ${primary}18, ${primary}08)`, borderTop:`1px solid ${primary}35`, borderBottom:`1px solid ${primary}35`, padding:"32px 56px" }}>
+        <section style={{ background:`linear-gradient(135deg,${primary}18,${primary}08)`, borderTop:`1px solid ${primary}35`, borderBottom:`1px solid ${primary}35`, padding:"32px 56px" }}>
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
-            {/* Header row */}
             <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16, flexWrap:"wrap" }}>
               <span style={{ fontSize:"1.4rem" }}>🎉</span>
               <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:"1.2rem", color:primary }}>
                 {stripMd(c.offers.title)}
               </span>
             </div>
-            {/* Description */}
             <p style={{ color:"rgba(240,237,232,0.75)", fontSize:"0.95rem", lineHeight:1.65, marginBottom:20, maxWidth:700 }}>
               {stripMd(c.offers.description)}
             </p>
-            {/* Promo + CTA row */}
-            <div style={{ display:"flex", alignItems:"center", gap:14, flexWrap:"wrap" }}>
-
-              <a href="#contact" style={{ padding:"10px 24px", background:primary, color:"#09090b", borderRadius:7, fontWeight:600, fontSize:"0.875rem", display:"inline-block" }}>
-                {stripMd(c.offers.cta) || "Claim Now"}
-              </a>
-            </div>
+            <a href="#contact" style={{ padding:"10px 24px", background:primary, color:ctaText, borderRadius:7, fontWeight:600, fontSize:"0.875rem", display:"inline-block" }}>
+              {stripMd(c.offers.cta) || "Enquire Now"}
+            </a>
           </div>
         </section>
       )}
 
-      {/* ── ABOUT ── */}
-      <section id="about" style={{ padding:"100px 56px", maxWidth:1100, margin:"0 auto" }}>
-        <div style={{ display:"grid", gridTemplateColumns: aboutImg ? "1fr 1fr" : "1fr", gap:60, alignItems:"center" }}>
+      {/* ABOUT */}
+      <section id="about">
+        <div className="about-grid" style={{ padding:"100px 56px", maxWidth:1100, margin:"0 auto", display:"grid", gridTemplateColumns: aboutImg ? "1fr 1fr" : "1fr", gap:60, alignItems:"center" }}>
           <div>
-            <div style={{ fontSize:"0.7rem", fontWeight:500, color:"rgba(240,237,232,0.3)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:20, display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ fontSize:"0.7rem", fontWeight:500, color:primary, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:20, display:"flex", alignItems:"center", gap:12 }}>
               About us <span style={{ flex:1, height:1, background:"rgba(255,255,255,0.06)" }}/>
             </div>
             <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(1.8rem,3.5vw,2.8rem)", fontWeight:800, letterSpacing:"-0.02em", marginBottom:20 }}>
@@ -161,41 +178,35 @@ export default function WebsiteTemplate() {
         </div>
       </section>
 
-      {/* ── SERVICES ── */}
-      <section id="services" style={{ padding:"0 56px 100px", maxWidth:1100, margin:"0 auto" }}>
-        <div style={{ fontSize:"0.7rem", fontWeight:500, color:"rgba(240,237,232,0.3)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:48, display:"flex", alignItems:"center", gap:12 }}>
+      {/* SERVICES */}
+      <section id="services" className="svc-section" style={{ padding:"0 56px 100px", maxWidth:1100, margin:"0 auto" }}>
+        <div style={{ fontSize:"0.7rem", fontWeight:500, color:primary, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:48, display:"flex", alignItems:"center", gap:12 }}>
           What we offer <span style={{ flex:1, height:1, background:"rgba(255,255,255,0.06)" }}/>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:`repeat(${Math.min(c.services?.length||3,3)},1fr)`, gap:1, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, overflow:"hidden" }}>
+        <div className="svc-grid" style={{ display:"grid", gridTemplateColumns:`repeat(${Math.min(c.services?.length||3,3)},1fr)`, gap:1, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, overflow:"hidden" }}>
           {(c.services||[]).map((s,i) => (
             <div key={i} style={{ background:"#0e0e10", overflow:"hidden", transition:"background 0.2s", display:"flex", flexDirection:"column" }}
               onMouseEnter={e=>e.currentTarget.style.background="#141416"}
               onMouseLeave={e=>e.currentTarget.style.background="#0e0e10"}>
-              {/* Service image */}
-              <div style={{ width:"100%", aspectRatio:"16/9", overflow:"hidden", background:"#1a1a1c", flexShrink:0 }}>
-                {s.image_url ? (
-                  <img src={s.image_url} alt={s.title} style={{ width:"100%", height:"100%", objectFit:"cover", filter:"brightness(0.85)", transition:"transform 0.4s" }}
-                    onMouseEnter={e=>e.target.style.transform="scale(1.05)"}
-                    onMouseLeave={e=>e.target.style.transform="scale(1)"}
-                  />
-                ) : (
-                  <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"2.5rem" }}>{s.icon}</div>
-                )}
+              <div style={{ width:"100%", aspectRatio:"4/3", overflow:"hidden", background:"#111113", display:"flex", alignItems:"center", justifyContent:"center", padding: s.image_url ? "8px" : "0", flexShrink:0 }}>
+                {s.image_url
+                  ? <img src={s.image_url} alt={s.title} style={{ maxWidth:"100%", maxHeight:"220px", objectFit:"contain", display:"block" }}/>
+                  : <div style={{ fontSize:"2.5rem" }}>{s.icon}</div>
+                }
               </div>
-              {/* Service text */}
               <div style={{ padding:"24px 24px 28px" }}>
-                <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:"1.05rem", marginBottom:10 }}>{s.title}</div>
-                <p style={{ fontSize:"0.875rem", color:"rgba(240,237,232,0.45)", lineHeight:1.65, fontWeight:300 }}>{stripMd(s.description)}</p>
+                <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:"1.05rem", marginBottom:10, color:`${primary}dd` }}>{s.title}</div>
+                <p style={{ fontSize:"0.875rem", color:"rgba(240,237,232,0.5)", lineHeight:1.65, fontWeight:300 }}>{stripMd(s.description)}</p>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ── */}
+      {/* TESTIMONIALS */}
       {c.testimonials?.length > 0 && (
         <section style={{ padding:"0 56px 100px", maxWidth:1100, margin:"0 auto" }}>
-          <div style={{ fontSize:"0.7rem", fontWeight:500, color:"rgba(240,237,232,0.3)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:48, display:"flex", alignItems:"center", gap:12 }}>
+          <div style={{ fontSize:"0.7rem", fontWeight:500, color:primary, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:48, display:"flex", alignItems:"center", gap:12 }}>
             What people say <span style={{ flex:1, height:1, background:"rgba(255,255,255,0.06)" }}/>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:20 }}>
@@ -211,16 +222,16 @@ export default function WebsiteTemplate() {
         </section>
       )}
 
-      {/* ── FAQ ── */}
+      {/* FAQ */}
       {c.faq?.length > 0 && (
         <section style={{ padding:"0 56px 100px", maxWidth:1100, margin:"0 auto" }}>
-          <div style={{ fontSize:"0.7rem", fontWeight:500, color:"rgba(240,237,232,0.3)", letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:48, display:"flex", alignItems:"center", gap:12 }}>
+          <div style={{ fontSize:"0.7rem", fontWeight:500, color:primary, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:48, display:"flex", alignItems:"center", gap:12 }}>
             FAQ <span style={{ flex:1, height:1, background:"rgba(255,255,255,0.06)" }}/>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:1, background:"rgba(255,255,255,0.05)", borderRadius:14, overflow:"hidden" }}>
             {c.faq.map((f,i) => (
               <div key={i} style={{ background:"#0e0e10", padding:"24px 28px" }}>
-                <div style={{ fontWeight:500, marginBottom:8, fontSize:"0.95rem" }}>{f.question}</div>
+                <div style={{ fontWeight:500, marginBottom:8, fontSize:"0.95rem", color:`${primary}cc` }}>{f.question}</div>
                 <div style={{ color:"rgba(240,237,232,0.5)", fontSize:"0.875rem", fontWeight:300, lineHeight:1.6 }}>{stripMd(f.answer)}</div>
               </div>
             ))}
@@ -228,8 +239,8 @@ export default function WebsiteTemplate() {
         </section>
       )}
 
-      {/* ── CTA ── */}
-      <section id="contact" style={{ padding:"80px 56px 120px", display:"flex", justifyContent:"center" }}>
+      {/* CTA */}
+      <section id="contact" className="cta-section" style={{ padding:"80px 56px 120px", display:"flex", justifyContent:"center" }}>
         <div style={{ maxWidth:680, width:"100%", border:"1px solid rgba(255,255,255,0.08)", borderRadius:20, padding:"64px 48px", textAlign:"center", background:"linear-gradient(135deg,rgba(255,255,255,0.03) 0%,transparent 60%)", position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:-1, left:"20%", right:"20%", height:1, background:`linear-gradient(90deg,transparent,${primary},transparent)` }}/>
           <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(1.8rem,4vw,2.8rem)", fontWeight:800, letterSpacing:"-0.02em", marginBottom:16 }}>
@@ -238,15 +249,15 @@ export default function WebsiteTemplate() {
           <p style={{ fontSize:"0.95rem", color:"rgba(240,237,232,0.5)", fontWeight:300, marginBottom:36, lineHeight:1.65 }}>
             {stripMd(c.cta?.subtext)}
           </p>
-          <a href={`mailto:${c.footer?.email}`} style={{ display:"inline-block", padding:"15px 40px", background:primary, color:"#09090b", borderRadius:9, fontWeight:600, fontSize:"1rem" }}>
-            {c.cta?.button_text || "Get Started"}
+          <a href={`mailto:${c.footer?.email}`} style={{ display:"inline-block", padding:"15px 40px", background:primary, color:ctaText, borderRadius:9, fontWeight:600, fontSize:"1rem" }}>
+            {c.cta?.button_text || "Contact Us"}
           </a>
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
+      {/* FOOTER */}
       <footer style={{ borderTop:"1px solid rgba(255,255,255,0.06)", padding:"28px 56px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:16 }}>
-        <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, color:"rgba(240,237,232,0.4)" }}>{branding?.business_name}</div>
+        <div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, color:primary }}>{branding?.business_name}</div>
         <div style={{ display:"flex", gap:24, fontSize:"0.8rem", color:"rgba(240,237,232,0.35)", flexWrap:"wrap" }}>
           {c.footer?.email   && <span>{c.footer.email}</span>}
           {c.footer?.phone   && <span>{c.footer.phone}</span>}

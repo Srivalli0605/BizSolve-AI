@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import CustomCursor from "../components/CustomCursor";
 import axios from "axios";
@@ -21,12 +21,12 @@ const NAV_ITEMS = [
 ];
 
 const QUICK_ACTIONS = [
-  { label: "Generate Website", sub: "AI builds your site",      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>,                                                                                                nav: "website",   color: "#e8d5a3" },
-  { label: "Create Poster",    sub: "Gemini image gen",         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 3-3 4 4"/></svg>,                                                                                               nav: "posters",   color: "#c9a96e" },
-  { label: "Email Campaign",   sub: "AI-written emails",        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M3 6l9 7 9-7"/></svg>,                                                                           nav: "campaigns", color: "#e8d5a3" },
-  { label: "Add Product",      sub: "Manage catalog",           icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 5v14M5 12h14"/></svg>,                                                                                                                                                      nav: "products",  color: "#c9a96e" },
-  { label: "Brand Vault",      sub: "Store assets",             icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>,                                                                                               nav: "vault",     color: "#e8d5a3" },
-  { label: "BizWiser",         sub: "Your AI growth advisor",   icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,                                                                                                             nav: "chatbot",   color: "#c9a96e" },
+  { label: "Generate Website", sub: "AI builds your site",    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>,                                                                                nav: "website",   color: "#e8d5a3" },
+  { label: "Create Poster",    sub: "Gemini image gen",       icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 3-3 4 4"/></svg>,                                                                       nav: "posters",   color: "#c9a96e" },
+  { label: "Email Campaign",   sub: "AI-written emails",      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M3 6l9 7 9-7"/></svg>,                                                  nav: "campaigns", color: "#e8d5a3" },
+  { label: "Add Product",      sub: "Manage catalog",         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 5v14M5 12h14"/></svg>,                                                                                                                            nav: "products",  color: "#c9a96e" },
+  { label: "Brand Vault",      sub: "Store assets",           icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>,                                                                     nav: "vault",     color: "#e8d5a3" },
+  { label: "BizWiser",         sub: "Your AI growth advisor", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,                                                                                   nav: "chatbot",   color: "#c9a96e" },
 ];
 
 const TIPS = [
@@ -61,12 +61,13 @@ const IMPLEMENTED_NAV = new Set(["dashboard", "chatbot", "chat-history", "vault"
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [activeNav,   setActiveNav]   = useState("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeNav,         setActiveNav]         = useState("dashboard");
+  const [sidebarOpen,       setSidebarOpen]       = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { isDark, toggle: toggleTheme, setDark, setLight } = useTheme();
-  const [loading,     setLoading]     = useState(true);
-  const [tipIdx]                      = useState(() => Math.floor(Math.random() * TIPS.length));
+  const [loading, setLoading] = useState(true);
+  const [tipIdx]              = useState(() => Math.floor(Math.random() * TIPS.length));
+  const contentRef            = useRef(null);
 
   const [user,      setUser]      = useState(null);
   const [business,  setBusiness]  = useState(null);
@@ -106,6 +107,11 @@ export default function Dashboard() {
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, [isDark]);
 
+  // Reset scroll to top when switching nav sections
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+  }, [activeNav]);
+
   if (loading) return <div className="dash-loading"><div className="dash-loading-dot"/></div>;
 
   return (
@@ -121,6 +127,7 @@ export default function Dashboard() {
         <aside className={`dash-sidebar ${mobileSidebarOpen ? "mobile-open" : ""}`}>
           <div className="dash-sidebar-inner">
 
+            {/* Logo + toggle */}
             <div className="dash-logo">
               <Link to="/" className="logo" style={{textDecoration:"none",display:"flex",alignItems:"center",gap:8}}>
                 <div className="logo-dot"/>
@@ -133,6 +140,7 @@ export default function Dashboard() {
               </button>
             </div>
 
+            {/* Business badge */}
             {business && (
               <div className={`dash-biz-badge ${!sidebarOpen?"collapsed":""}`}>
                 <div className="dash-biz-avatar">
@@ -147,6 +155,7 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* Nav */}
             <nav className="dash-nav">
               {NAV_ITEMS.map(item=>(
                 <button key={item.id}
@@ -161,6 +170,7 @@ export default function Dashboard() {
               ))}
             </nav>
 
+            {/* Bottom — theme + logout */}
             <div className="dash-sidebar-bottom">
               <div className={`dash-theme-row ${!sidebarOpen?"collapsed":""}`}>
                 <button className={`dash-theme-btn ${!isDark?"active":""}`} onClick={setLight} title="Light mode">
@@ -191,6 +201,7 @@ export default function Dashboard() {
         {/* ─── MAIN ─── */}
         <main className="dash-main">
 
+          {/* Topbar */}
           <header className="dash-topbar">
             <button className="topbar-hamburger" onClick={() => setMobileSidebarOpen(s => !s)} title="Menu">
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -219,7 +230,9 @@ export default function Dashboard() {
 
           {/* ─── DASHBOARD HOME ─── */}
           {activeNav==="dashboard" && (
-            <div className="dash-content">
+            <div className="dash-content" ref={contentRef}>
+
+              {/* Brand card */}
               {business && (
                 <div className="dash-brand-card">
                   <div className="dash-brand-card-top">
@@ -253,6 +266,7 @@ export default function Dashboard() {
                 </div>
               )}
 
+              {/* Stats */}
               <div className="dash-stats-row">
                 {[
                   {label:"Websites",  value:websites.length,  sub:websites.filter(w=>w.published_url).length+" live",   icon:<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M2 7h16"/></svg>},
@@ -269,6 +283,7 @@ export default function Dashboard() {
                 ))}
               </div>
 
+              {/* Quick actions */}
               <div className="dash-section">
                 <div className="dash-section-header">
                   <div className="dash-section-title">Quick actions</div>
@@ -286,6 +301,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* History row */}
               <div className="dash-history-row">
                 <div className="dash-history-panel">
                   <div className="dash-panel-header">
@@ -310,6 +326,7 @@ export default function Dashboard() {
                     }
                   </div>
                 </div>
+
                 <div className="dash-history-panel">
                   <div className="dash-panel-header">
                     <div><div className="dash-panel-title">Generated Posters</div><div className="dash-panel-sub">Your marketing visuals</div></div>
@@ -333,6 +350,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* Campaigns strip */}
               {campaigns.length>0 && (
                 <div className="dash-section">
                   <div className="dash-section-header">
@@ -356,6 +374,7 @@ export default function Dashboard() {
                 </div>
               )}
 
+              {/* Tip card */}
               <div className="dash-tip-card">
                 <div className="dash-tip-icon">
                   <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -364,13 +383,14 @@ export default function Dashboard() {
                 </div>
                 <div className="dash-tip-text"><strong>Tip:</strong> {TIPS[tipIdx]}</div>
               </div>
+
             </div>
           )}
 
-          {/* ─── CHAT PAGES ─── */}
+          {/* ─── FEATURE PAGES ─── */}
           {activeNav === "chatbot"      && <ChatPage />}
           {activeNav === "chat-history" && <ChatHistoryPage />}
-          {activeNav === "vault"        && <BrandVaultPage />}  {/* ← ADD THIS */}
+          {activeNav === "vault"        && <BrandVaultPage />}
 
           {/* ─── COMING SOON ─── */}
           {!IMPLEMENTED_NAV.has(activeNav) && (

@@ -1,28 +1,36 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import CustomCursor from "../components/CustomCursor";
 import axios from "axios";
 import "../styles/Dashboard.css";
+import "../styles/BrandVault.css";
 import { useTheme } from "../context/ThemeContext";
 import Campaigns from "./Campaigns";
+import WebsiteGenerator from './WebsiteGenerator';
+import Products from './Products';
+
+import ChatPage from "./ChatPage";
+import ChatHistoryPage from "./ChatHistoryPage";
+import BrandVaultPage from "./BrandVaultPage";
 
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard",   icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg> },
-  { id: "website",   label: "Website",     icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M2 7h16M6 3v4"/></svg> },
-  { id: "products",  label: "Products",    icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 5h14M3 10h14M3 15h14"/></svg> },
-  { id: "posters",   label: "Posters",     icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="16" height="16" rx="2"/><path d="M2 13l4-4 3 3 3-4 6 6"/></svg> },
-  { id: "campaigns", label: "Campaigns",   icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 5h14a1 1 0 011 1v8a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1z"/><path d="M2 7l8 5 8-5"/></svg> },
-  { id: "chatbot",   label: "AI Chatbot",  icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 10c0 3.866-3.134 7-7 7a6.98 6.98 0 01-3.5-.937L3 17l.937-3.5A6.98 6.98 0 013 10c0-3.866 3.134-7 7-7s7 3.134 7 7z"/></svg> },
-  { id: "vault",     label: "Brand Vault", icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h12a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M7 4V2M13 4V2M3 8h14"/></svg> },
+  { id: "dashboard",    label: "Dashboard",    icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg> },
+  { id: "website",      label: "Website",      icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M2 7h16M6 3v4"/></svg> },
+  { id: "products",     label: "Products",     icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 5h14M3 10h14M3 15h14"/></svg> },
+  { id: "posters",      label: "Posters",      icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="16" height="16" rx="2"/><path d="M2 13l4-4 3 3 3-4 6 6"/></svg> },
+  { id: "campaigns",    label: "Campaigns",    icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 5h14a1 1 0 011 1v8a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1z"/><path d="M2 7l8 5 8-5"/></svg> },
+  { id: "chatbot",      label: "BizWiser",     icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 10c0 3.866-3.134 7-7 7a6.98 6.98 0 01-3.5-.937L3 17l.937-3.5A6.98 6.98 0 013 10c0-3.866 3.134-7 7-7s7 3.134 7 7z"/></svg> },
+  { id: "chat-history", label: "Chat History", icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 4h14a1 1 0 011 1v8a1 1 0 01-1 1H5l-3 3V5a1 1 0 011-1z"/><path d="M6 8h8M6 11h5"/></svg> },
+  { id: "vault",        label: "Brand Vault",  icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h12a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M7 4V2M13 4V2M3 8h14"/></svg> },
 ];
 
 const QUICK_ACTIONS = [
-  { label: "Generate Website", sub: "AI builds your site",  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>, nav: "website",   color: "#e8d5a3" },
-  { label: "Create Poster",    sub: "Gemini image gen",     icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 3-3 4 4"/></svg>, nav: "posters",   color: "#c9a96e" },
-  { label: "Email Campaign",   sub: "AI-written emails",    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M3 6l9 7 9-7"/></svg>, nav: "campaigns", color: "#e8d5a3" },
-  { label: "Add Product",      sub: "Manage catalog",       icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 5v14M5 12h14"/></svg>, nav: "products",  color: "#c9a96e" },
-  { label: "Brand Vault",      sub: "Store assets",         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>, nav: "vault",     color: "#e8d5a3" },
-  { label: "AI Chatbot",       sub: "Configure & embed",    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>, nav: "chatbot",   color: "#c9a96e" },
+  { label: "Generate Website", sub: "AI builds your site",    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>,                                                                                nav: "website",   color: "#e8d5a3" },
+  { label: "Create Poster",    sub: "Gemini image gen",       icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 3-3 4 4"/></svg>,                                                                       nav: "posters",   color: "#c9a96e" },
+  { label: "Email Campaign",   sub: "AI-written emails",      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M3 6l9 7 9-7"/></svg>,                                                  nav: "campaigns", color: "#e8d5a3" },
+  { label: "Add Product",      sub: "Manage catalog",         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 5v14M5 12h14"/></svg>,                                                                                                                            nav: "products",  color: "#c9a96e" },
+  { label: "Brand Vault",      sub: "Store assets",           icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>,                                                                     nav: "vault",     color: "#e8d5a3" },
+  { label: "BizWiser",         sub: "Your AI growth advisor", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,                                                                                   nav: "chatbot",   color: "#c9a96e" },
 ];
 
 const TIPS = [
@@ -53,14 +61,18 @@ const parseSwatch = (c) => {
   return MAP[t.toLowerCase()] || "#e8d5a3";
 };
 
+const IMPLEMENTED_NAV = new Set(["dashboard", "chatbot", "chat-history", "website", "products","vault"]);
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [activeNav,   setActiveNav]   = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { isDark, toggle: toggleTheme, setDark, setLight } = useTheme();
-  const [loading,     setLoading]     = useState(true);
-  const [tipIdx]                      = useState(() => Math.floor(Math.random() * TIPS.length));
+  const [loading, setLoading] = useState(true);
+  const [tipIdx]              = useState(() => Math.floor(Math.random() * TIPS.length));
+  const contentRef            = useRef(null);
 
   const [user,      setUser]      = useState(null);
   const [business,  setBusiness]  = useState(null);
@@ -99,6 +111,11 @@ export default function Dashboard() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, [isDark]);
+
+  // Reset scroll to top when switching nav sections
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+  }, [activeNav]);
 
   if (loading) return <div className="dash-loading"><div className="dash-loading-dot"/></div>;
 
@@ -155,6 +172,7 @@ export default function Dashboard() {
               ))}
             </nav>
 
+            {/* Bottom — theme + logout */}
             <div className="dash-sidebar-bottom">
               <div className={`dash-theme-row ${!sidebarOpen?"collapsed":""}`}>
                 <button className={`dash-theme-btn ${!isDark?"active":""}`} onClick={setLight} title="Light mode">
@@ -170,7 +188,6 @@ export default function Dashboard() {
                   {sidebarOpen && <span>Dark</span>}
                 </button>
               </div>
-
               <button className="dash-nav-item dash-logout" onClick={handleLogout} title={!sidebarOpen?"Log out":""}>
                 <span className="dash-nav-icon">
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -192,7 +209,6 @@ export default function Dashboard() {
                 <path d="M3 5h14M3 10h14M3 15h14" strokeLinecap="round"/>
               </svg>
             </button>
-
             <div className="dash-topbar-left">
               <div className="dash-greeting">{greeting()}, <span className="dash-greeting-name">{user?.name?.split(" ")[0]||"there"}</span></div>
               <div className="dash-topbar-sub">
@@ -215,7 +231,7 @@ export default function Dashboard() {
 
           {/* ─── DASHBOARD HOME ─── */}
           {activeNav==="dashboard" && (
-            <div className="dash-content">
+            <div className="dash-content" ref={contentRef}>
 
               {business && (
                 <div className="dash-brand-card">
@@ -253,10 +269,10 @@ export default function Dashboard() {
               {/* Stats */}
               <div className="dash-stats-row">
                 {[
-                  {label:"Websites",  value:websites.length,  sub:websites.filter(w=>w.published_url).length+" live",    icon:<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M2 7h16"/></svg>},
-                  {label:"Posters",   value:posters.length,   sub:"Generated",      icon:<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="16" height="16" rx="2"/><path d="M2 13l4-4 3 3 3-4 6 6"/></svg>},
-                  {label:"Campaigns", value:campaigns.length, sub:campaigns.filter(c=>c.status==="sent").length+" sent",  icon:<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 5h14a1 1 0 011 1v8a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1z"/><path d="M2 7l8 5 8-5"/></svg>},
-                  {label:"Products",  value:products.length,  sub:products.length===0?"Add your first":"In catalog",     icon:<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 5h14M3 10h14M3 15h14"/></svg>},
+                  {label:"Websites",  value:websites.length,  sub:websites.filter(w=>w.published_url).length+" live",   icon:<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M2 7h16"/></svg>},
+                  {label:"Posters",   value:posters.length,   sub:"Generated",                                           icon:<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="16" height="16" rx="2"/><path d="M2 13l4-4 3 3 3-4 6 6"/></svg>},
+                  {label:"Campaigns", value:campaigns.length, sub:campaigns.filter(c=>c.status==="sent").length+" sent", icon:<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 5h14a1 1 0 011 1v8a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1z"/><path d="M2 7l8 5 8-5"/></svg>},
+                  {label:"Products",  value:products.length,  sub:products.length===0?"Add your first":"In catalog",    icon:<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 5h14M3 10h14M3 15h14"/></svg>},
                 ].map((s,i)=>(
                   <div className="dash-stat-card" key={i} style={{animationDelay:`${i*0.07}s`}}>
                     <div className="dash-stat-icon">{s.icon}</div>
@@ -379,7 +395,27 @@ export default function Dashboard() {
           )}
 
           {/* ─── OTHER SECTIONS (coming soon placeholders) ─── */}
-          {activeNav!=="dashboard" && activeNav!=="campaigns" && (
+          
+{activeNav==="website" && (
+            <div className="dash-content">
+              <WebsiteGenerator />
+            </div>
+          )}
+
+{/* ── PRODUCTS ── */}
+          {activeNav==="products" && (
+            <div className="dash-content">
+              <Products />
+            </div>
+          )}
+          {/* ─── CHAT PAGES ─── */}
+          {/* ─── FEATURE PAGES ─── */}
+          {activeNav === "chatbot"      && <ChatPage />}
+          {activeNav === "chat-history" && <ChatHistoryPage />}
+          {activeNav === "vault"        && <BrandVaultPage />}
+
+          {/* ─── COMING SOON ─── */}
+          {!IMPLEMENTED_NAV.has(activeNav) && (
             <div className="dash-content">
               <div className="dash-coming-soon">
                 <div className="dash-coming-icon">{NAV_ITEMS.find(n=>n.id===activeNav)?.icon}</div>

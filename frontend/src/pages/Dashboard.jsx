@@ -4,6 +4,7 @@ import CustomCursor from "../components/CustomCursor";
 import axios from "axios";
 import "../styles/Dashboard.css";
 import { useTheme } from "../context/ThemeContext";
+import Campaigns from "./Campaigns";
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard",   icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg> },
@@ -56,7 +57,6 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [activeNav,   setActiveNav]   = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  // FIX: mobile sidebar overlay state
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { isDark, toggle: toggleTheme, setDark, setLight } = useTheme();
   const [loading,     setLoading]     = useState(true);
@@ -96,7 +96,6 @@ export default function Dashboard() {
   const greeting = () => { const h=new Date().getHours(); return h<12?"Good morning":h<17?"Good afternoon":"Good evening"; };
   const brandColors = business?.brand_colors ?? [];
 
-  // FIX: apply theme via data-theme attribute on the root element
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, [isDark]);
@@ -106,20 +105,16 @@ export default function Dashboard() {
   return (
     <>
       <CustomCursor />
-      {/* FIX: removed theme-dark/theme-light classes — theme is now via data-theme on <html> */}
       <div className={`dash-layout ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
 
-        {/* FIX: mobile overlay backdrop */}
         {mobileSidebarOpen && (
           <div className="dash-sidebar-backdrop" onClick={() => setMobileSidebarOpen(false)} />
         )}
 
         {/* ─── SIDEBAR ─── */}
-        {/* FIX: added mobile-open class for slide-in on mobile */}
         <aside className={`dash-sidebar ${mobileSidebarOpen ? "mobile-open" : ""}`}>
           <div className="dash-sidebar-inner">
 
-            {/* Logo + toggle */}
             <div className="dash-logo">
               <Link to="/" className="logo" style={{textDecoration:"none",display:"flex",alignItems:"center",gap:8}}>
                 <div className="logo-dot"/>
@@ -132,7 +127,6 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Business badge */}
             {business && (
               <div className={`dash-biz-badge ${!sidebarOpen?"collapsed":""}`}>
                 <div className="dash-biz-avatar">
@@ -147,7 +141,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Nav */}
             <nav className="dash-nav">
               {NAV_ITEMS.map(item=>(
                 <button key={item.id}
@@ -162,25 +155,15 @@ export default function Dashboard() {
               ))}
             </nav>
 
-            {/* Bottom — theme toggle + logout */}
             <div className="dash-sidebar-bottom">
-              {/* FIX: theme toggle only shows text labels when sidebar is open */}
               <div className={`dash-theme-row ${!sidebarOpen?"collapsed":""}`}>
-                <button
-                  className={`dash-theme-btn ${!isDark?"active":""}`}
-                  onClick={setLight}
-                  title="Light mode"
-                >
+                <button className={`dash-theme-btn ${!isDark?"active":""}`} onClick={setLight} title="Light mode">
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
                     <circle cx="10" cy="10" r="4"/><path d="M10 1v2M10 17v2M1 10h2M17 10h2M3.5 3.5l1.4 1.4M15.1 15.1l1.4 1.4M3.5 16.5l1.4-1.4M15.1 4.9l1.4-1.4"/>
                   </svg>
                   {sidebarOpen && <span>Light</span>}
                 </button>
-                <button
-                  className={`dash-theme-btn ${isDark?"active":""}`}
-                  onClick={setDark}
-                  title="Dark mode"
-                >
+                <button className={`dash-theme-btn ${isDark?"active":""}`} onClick={setDark} title="Dark mode">
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
                     <path d="M17.5 12A7.5 7.5 0 018 2.5a7.5 7.5 0 100 15 7.5 7.5 0 009.5-5.5z"/>
                   </svg>
@@ -203,9 +186,7 @@ export default function Dashboard() {
         {/* ─── MAIN ─── */}
         <main className="dash-main">
 
-          {/* Topbar */}
           <header className="dash-topbar">
-            {/* FIX: hamburger button for mobile */}
             <button className="topbar-hamburger" onClick={() => setMobileSidebarOpen(s => !s)} title="Menu">
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
                 <path d="M3 5h14M3 10h14M3 15h14" strokeLinecap="round"/>
@@ -236,7 +217,6 @@ export default function Dashboard() {
           {activeNav==="dashboard" && (
             <div className="dash-content">
 
-              {/* Brand card */}
               {business && (
                 <div className="dash-brand-card">
                   <div className="dash-brand-card-top">
@@ -391,8 +371,15 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Placeholder sections */}
-          {activeNav!=="dashboard" && (
+          {/* ─── CAMPAIGNS (fully working) ─── */}
+          {activeNav==="campaigns" && (
+            <div className="dash-content">
+              <Campaigns />
+            </div>
+          )}
+
+          {/* ─── OTHER SECTIONS (coming soon placeholders) ─── */}
+          {activeNav!=="dashboard" && activeNav!=="campaigns" && (
             <div className="dash-content">
               <div className="dash-coming-soon">
                 <div className="dash-coming-icon">{NAV_ITEMS.find(n=>n.id===activeNav)?.icon}</div>
@@ -402,6 +389,7 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+
         </main>
       </div>
     </>

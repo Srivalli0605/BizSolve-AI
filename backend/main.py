@@ -8,6 +8,7 @@ Registers all routers, configures CORS, and sets up the FastAPI app.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+
 # Import all route modules
 from routes.auth_routes import router as auth_router
 from routes.business_routes import router as business_router

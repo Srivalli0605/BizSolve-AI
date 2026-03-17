@@ -1,8 +1,8 @@
-🚀 BizSolve AI
+**🚀 BizSolve AI**
 BizSolve AI is an AI-powered marketing assistant designed to help small and local businesses build a strong digital presence without requiring technical or marketing expertise. It provides an all-in-one platform to generate websites, marketing content, posters, emails, and business growth strategies using AI.
 
-🌟 Features
-🧠 AI Founder Assistant
+**🌟 Features**
+**🧠 AI Founder Assistant**
 Provides business growth strategies
 
 Suggests sales improvement ideas
@@ -10,8 +10,8 @@ Suggests sales improvement ideas
 Helps with marketing and positioning
 
 Uses business context for personalized advice
-
-🌐 Website Generator
+**
+🌐 Website Generator**
 Generates complete marketing websites
 
 Deploys instantly with a live link
@@ -20,7 +20,7 @@ Allows iterative edits via prompt
 
 Focused on lead generation (not e-commerce)
 
-🎨 Poster Generator
+**🎨 Poster Generator**
 Generates marketing posters for:
 
 Festivals
@@ -33,7 +33,7 @@ Uses AI + structured overlays for clean design
 
 Automatically applies brand identity
 
-✉️ Email Generator
+**✉️ Email Generator**
 Creates marketing emails
 
 Supports campaigns and announcements
@@ -42,7 +42,7 @@ Uses brand tone and business data
 
 Send-only system (no inbox handling)
 
-📦 BrandVault
+**📦 BrandVault**
 Central storage for brand assets
 
 Stores:
@@ -59,15 +59,15 @@ Media
 
 Ensures consistency across all features
 
-💬 Chat Logs
+**💬 BizWiser**
 Stores AI interactions
 
 Allows users to view past conversations
 
 Helps maintain context-aware responses
 
-🏗️ Tech Stack
-Frontend
+**🏗️ Tech Stack**
+**Frontend**
 React (Vite)
 
 Tailwind CSS
@@ -76,7 +76,7 @@ Axios
 
 React Router
 
-Backend
+**Backend**
 FastAPI
 
 Python
@@ -85,10 +85,10 @@ Pydantic
 
 JWT Authentication
 
-Database
+**Database**
 MongoDB (Atlas)
-
-AI & APIs
+**
+AI & APIs**
 Gemini API (text generation)
 
 Stable Diffusion / AI Image Models (poster backgrounds)
@@ -96,9 +96,3 @@ Stable Diffusion / AI Image Models (poster backgrounds)
 Media Storage
 Cloudinary
 
-Deployment
-Frontend: Vercel
-
-Backend: Render / Railway
-
-Database: MongoDB Atlas

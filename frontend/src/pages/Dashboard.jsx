@@ -5,6 +5,7 @@ import axios from "axios";
 import "../styles/Dashboard.css";
 import "../styles/BrandVault.css";
 import { useTheme } from "../context/ThemeContext";
+import Campaigns from "./Campaigns";
 import WebsiteGenerator from './WebsiteGenerator';
 import Products from './Products';
 
@@ -64,8 +65,9 @@ const IMPLEMENTED_NAV = new Set(["dashboard", "chatbot", "chat-history", "websit
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [activeNav,         setActiveNav]         = useState("dashboard");
-  const [sidebarOpen,       setSidebarOpen]       = useState(true);
+  const [activeNav,   setActiveNav]   = useState("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { isDark, toggle: toggleTheme, setDark, setLight } = useTheme();
   const [loading, setLoading] = useState(true);
@@ -130,7 +132,6 @@ export default function Dashboard() {
         <aside className={`dash-sidebar ${mobileSidebarOpen ? "mobile-open" : ""}`}>
           <div className="dash-sidebar-inner">
 
-            {/* Logo + toggle */}
             <div className="dash-logo">
               <Link to="/" className="logo" style={{textDecoration:"none",display:"flex",alignItems:"center",gap:8}}>
                 <div className="logo-dot"/>
@@ -143,7 +144,6 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Business badge */}
             {business && (
               <div className={`dash-biz-badge ${!sidebarOpen?"collapsed":""}`}>
                 <div className="dash-biz-avatar">
@@ -158,7 +158,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Nav */}
             <nav className="dash-nav">
               {NAV_ITEMS.map(item=>(
                 <button key={item.id}
@@ -204,7 +203,6 @@ export default function Dashboard() {
         {/* ─── MAIN ─── */}
         <main className="dash-main">
 
-          {/* Topbar */}
           <header className="dash-topbar">
             <button className="topbar-hamburger" onClick={() => setMobileSidebarOpen(s => !s)} title="Menu">
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -235,7 +233,6 @@ export default function Dashboard() {
           {activeNav==="dashboard" && (
             <div className="dash-content" ref={contentRef}>
 
-              {/* Brand card */}
               {business && (
                 <div className="dash-brand-card">
                   <div className="dash-brand-card-top">
@@ -390,6 +387,15 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* ─── CAMPAIGNS (fully working) ─── */}
+          {activeNav==="campaigns" && (
+            <div className="dash-content">
+              <Campaigns />
+            </div>
+          )}
+
+          {/* ─── OTHER SECTIONS (coming soon placeholders) ─── */}
+          
 {activeNav==="website" && (
             <div className="dash-content">
               <WebsiteGenerator />

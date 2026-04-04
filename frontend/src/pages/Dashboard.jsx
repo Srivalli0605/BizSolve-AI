@@ -61,7 +61,7 @@ const parseSwatch = (c) => {
   return MAP[t.toLowerCase()] || "#e8d5a3";
 };
 
-const IMPLEMENTED_NAV = new Set(["dashboard", "chatbot", "chat-history", "website", "products","vault"]);
+const IMPLEMENTED_NAV = new Set(["dashboard", "chatbot", "chat-history", "website", "products","vault","campaigns"]);
 
 export default function Dashboard() {
   const navigate = useNavigate();
